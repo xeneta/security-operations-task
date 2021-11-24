@@ -1,4 +1,4 @@
-# Practical section
+# Practical case: Deployable development environment
 
 ## Premise
 
@@ -90,7 +90,8 @@ The output should be something like this:
 
 * If you have any questions, please don't hesitate to contact us at tech-recruitment@xeneta.com
 
-# Theoretical section
+# Case: Data ingestion pipeline
+
 In this section we are seeking high-level answers, use a maximum of couple of paragraphs to answer the questions.
 
 ## Extended service
