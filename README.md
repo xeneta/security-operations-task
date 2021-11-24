@@ -8,7 +8,7 @@ The goal is to end up with a limited set of commands that would install the diff
 
 ## Running the database
 
-There’s an SQL dump in `db/rates.sql` that needs to be loaded into a PostgreSQL 9.6 database.
+There’s an SQL dump in `db/rates.sql` that needs to be loaded into a PostgreSQL 13.5 database.
 
 After installing the database, the data can be imported through:
 
@@ -39,7 +39,7 @@ Start from the `rates` folder.
 ### 1. Install prerequisites
 
 ```
-DEBIAN_FRONTEND=noninteractive apt-get update && apt-get install -y python-pip
+DEBIAN_FRONTEND=noninteractive apt-get update && apt-get install -y python3-pip
 pip install -U gunicorn
 pip install -Ur requirements.txt
 ```
@@ -55,7 +55,7 @@ The API should now be running on [http://localhost:3000](http://localhost:3000).
 
 Get average rates between ports:
 ```
-curl "http://127.0.0.1:3000/rates?date_from=2016-01-01&date_to=2016-01-31&orig_code=CNGGZ&dest_code=EETLL"
+curl "http://127.0.0.1:3000/rates?date_from=2021-01-01&date_to=2021-01-31&orig_code=CNGGZ&dest_code=EETLL"
 ```
 
 The output should be something like this:
@@ -64,12 +64,12 @@ The output should be something like this:
    "rates" : [
       {
          "count" : 3,
-         "day" : "2016-01-31",
+         "day" : "2021-01-31",
          "price" : 1154.33333333333
       },
       {
          "count" : 3,
-         "day" : "2016-01-30",
+         "day" : "2021-01-30",
          "price" : 1154.33333333333
       },
       ...
