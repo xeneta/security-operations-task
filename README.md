@@ -4,7 +4,7 @@ The task is two-fold:
 
 * A practical case of developing a deployable production environment based on a simple application.
 
-* A theoretical case describing and evolving a data ingestion pipeline.
+* A theoretical case describing a solution to provide secure database access.
 
 You will be expected to present and discuss both solutions.
 
