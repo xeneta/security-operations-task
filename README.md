@@ -2,7 +2,7 @@
 
 The task is two-fold:
 
-* A practical case of developing a deployable development environment based on a simple application.
+* A practical case of developing a deployable production environment based on a simple application.
 
 * A theoretical case describing and evolving a data ingestion pipeline.
 
@@ -10,7 +10,7 @@ You will be expected to present and discuss both solutions.
 
 Some general points:
 
-* **Provide the solution as a public git repository that can easily be cloned by our development team.**
+* **Provide the solution as a public git repository that can easily be cloned by our team.**
 
 * Provide any instructions needed to run the automation solution in `README.md`.
 
@@ -20,13 +20,13 @@ Some general points:
 
 * If you have any questions, please don't hesitate to contact us.
 
-## Practical case: Deployable development environment
+## Practical case: Deployable production environment
 
 ### Premise
 
-Provided are two simplified parts of the same application environment: A database dump and an API service. Your task is to automate setting up the development environment in a reliable and testable manner using "infrastructure as code" principles.
+Provided are two simplified parts of the same application environment: A database dump and an API service. Your task is to automate setting up the production environment in a reliable and testable manner using "infrastructure as code" principles.
 
-The goal is to end up with a limited set of commands that would install the different environments and run them using containers. You can use any software that you find suitable for the task. The code should come with instructions on how to run it and deploy it to arbitrary targets; whether it is deployed locally, towards physical machines, or towards virtual nodes in the cloud.
+The goal is to end up with a limited set of commands that would install and run them using containers. You can use any software that you find suitable for the task. The code should come with instructions on how to run and deploy it to AWS (or any other cloud you are comfortable with).
 
 ### Running the database
 
@@ -99,35 +99,14 @@ The output should be something like this:
 }
 ```
 
-## Case: Data ingestion pipeline
+## Case: Secure Database Access
 
-In this section we are seeking high-level answers, use a maximum of couple of paragraphs to answer the questions.
+In this section we are seeking high-level answers only (no need to implement anything), and describe your solution appropriately.
 
-### Extended service
+We use AWS RDS to host our PostgreSQL database that powers critical data services within Xeneta. Due to compliance requirements, we need to enable end-to-end auditing capability for any operation performed in the database. Along with that, we need an automated solution that rotates database user passwords every 30 days. The database being accessed by both Xeneta internal users and any applications hosted in AWS ECS.
+Users will be created on request and a data security personal must approve the request.
 
-Imagine that for providing data to fuel this service, you need to receive and insert big batches of new prices, ranging within tens of thousands of items, conforming to a similar format. Each batch of items needs to be processed together, either all items go in, or none of them do.
-
-Both the incoming data updates and requests for data can be highly sporadic - there might be large periods without much activity, followed by periods of heavy activity.
-
-High availability is a strict requirement from the customers.
-
-* How would you design the system?
-* How would you set up monitoring to identify bottlenecks as the load grows?
-* How can those bottlenecks be addressed in the future?
+Propose a solution that we can implement to achieve the objectives while having zero downtime for the Xeneta applications.
 
 Provide a high-level diagram, along with a few paragraphs describing the choices you've made and what factors you need to take into consideration.
 
-### Additional questions
-
-Here are a few possible scenarios where the system requirements change or the new functionality is required:
-
-1. The batch updates have started to become very large, but the requirements for their processing time are strict.
-
-2. Code updates need to be pushed out frequently. This needs to be done without the risk of stopping a data update already being processed, nor a data response being lost.
-
-3. For development and staging purposes, you need to start up a number of scaled-down versions of the system.
-
-Please address *at least* one of the situations. Please describe:
-
-- Which parts of the system are the bottlenecks or problems that might make it incompatible with the new requirements?
-- How would you restructure and scale the system to address those?
