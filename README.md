@@ -1,112 +1,98 @@
-# Xeneta Operations Task
+Part 1:
 
-The task is two-fold:
+This terraform project was tested locally in a MacBook Pro (Monterey v12.6) using Terraform v1.2.5 
+and Docker engine v20.10.12.
 
-* A practical case of developing a deployable production environment based on a simple application.
+Please ensure that you have the docker running on your machine (I often shut it down due to resources) as Terraform plan will fail without it running in the background.
 
-* A theoretical case describing a solution to provide secure database access.
 
-You will be expected to present and discuss both solutions.
+Here are the steps to spin up the container environment with the api server consuming data from postgresl 13 
+in the same container. 
 
-Some general points:
+After docker daemon bootstraps, cd to the root of the project, and run the following commands:
 
-* **Provide the solution as a public git repository that can easily be cloned by our team.**
+terraform init
+terraform plan
+terraform apply -auto-approve
 
-* Provide any instructions needed to run the automation solution in `README.md`.
+Running these commands shall create and provision a docker container which has a postgres populated with data from the
+sql dump and api server.
+psql -h localhost -U postgres -c "SELECT 'alive'" and the curl command generated expected results
 
-* The configuration file `rates/config.py` has some defaults that will most likely change depending on the solution. It would be beneficial to have a way to more dynamically pass in config values.
+Notice that after running the last command, the console will stay active.Kill it by entering
+CTRL+C, which will not affect the functionality of the running container.
 
-* List and describe the tool(s) used, and why they were chosen for the task.
+Deployment to AWS will require a permissible AWS role and the logic for product is likely quite different 
+from that for local, mainly because of the following reasons:
+1. For the local environment, the postgres and api servers run in the same container as suggested by the requirements of 
+the challenge. In product, the db and api will run in separate containers with images.
+2. For local, the docker image comes from a ready-made postgres image with custom logic for the
+   api server. For product, there will be separate images likely from a registry.
+3. In local, a docker provider is used. In prod, the same provider can be used. Some docker provisioner resources, however, 
+can only run in a container cluster, so local has to use a workaround for the provisioning of the api server.
+4. As far as I can see, the security requirements for prod can be pretty expensive to implement in local, if not impractical.
 
-* If you have any questions, please don't hesitate to contact us.
+On the other hand, the vast majority of the deployment for different AWS environments dev, stage, prod, for example, shall
+be sharable as terraform modules, with environmental differences passed as deploy time terraform variables.
 
-## Practical case: Deployable production environment
+The Dockerfile for this local deployment contains hardcoded environment variables for DB credentials. For AWS deployment, 
+they will be provided as environment variables in the task definition for the DB.
 
-### Premise
+This commit has not addressed a potential weakness that DB credentials are hardcoded in config.py.
+It is not addressed because the local solution will be quite different from an aws solution, while credential management
+is a key component of the next part of the challenge.
 
-Provided are two simplified parts of the same application environment: A database dump and an API service. Your task is to automate setting up the production environment in a reliable and testable manner using "infrastructure as code" principles.
+Part 2:
 
-The goal is to end up with a limited set of commands that would install and run them using containers. You can use any software that you find suitable for the task. The code should come with instructions on how to run and deploy it to AWS (or any other cloud you are comfortable with).
+ECS is a solid service which will be the focus of this second part of the discussion. Before I go further, I want to 
+briefly mention that EKS, although more complex, has two notable merits in my opinion, one of which is that the code to
+deploy and provision a Kubernetes cluster is largely the same across common public clouds, while ECS is locked to AWS.
+Usually such locking is not an issue, but I did participate in one re-clouding project.
+Arguably, another merit is tooling is slightly better and tends to offer more options. With helm, for example, 
+installing software package in EKS pods could be easier than in ECS containers.
 
-### Running the database
+On the other hand, if we do not envision future cloud migration and the staple docker images do not need to complex 
+provisioning and customization, ECS is a great fit, enjoying smooth integration of AWS security components.
 
-There’s an SQL dump in `db/rates.sql` that needs to be loaded into a PostgreSQL 13.5 database.
+Below is a description of one possible solution. Every component described can be provisioned via terraform scripts.
 
-After installing the database, the data can be imported through:
+terraform script layout:
+   root directory
+      -lib # for resuable logic
+         -module 1
+         -module 2
+      -dev
+         main.tf with aws provider and a remote backend. It will mostly contain invocation of modules defined under lib.
+         variables
+         outputs
+      -stage # similar to dev. The significant differences will be in the variables file.
+      -prod # similar to dev. The significant differences will be in the variables file.
 
-```
-createdb rates
-psql -h localhost -U postgres < db/rates.sql
-```
+1. CloudTrail can be used to audit traffic to and from the DB containers, the latter which will be created with logging
+through CloudTrail.
+2. IAM policies will be created for DB access.
+3. IAM roles will be created for users and applications for DB access.
+4. An AWS secrete manager can be used for DB access credentials. It can be configured to transparently rotate secrets every 
+30 days, without any downtime if apps in ECS are configured to read credentials from the manager. 
+The manager can be configured with CloudTrail auditing as well.
+5. ECR or a private image registry can be used to store custom docker images.
 
-You can verify that the database is running through:
+A downside of this design is it uses many managed services which are relatively costly. Depending on the load on the ECS
+cluster, we may not need some of such services. In that case, we can come up with some custom components which are not
+too hard to build and maintain.
 
-```
-psql -h localhost -U postgres -c "SELECT 'alive'"
-```
+A diagram for the architecture is included in another file.
 
-The output should be something like:
-
-```
- ?column?
-----------
- alive
-(1 row)
-```
-
-### Running the API service
-
-Start from the `rates` folder.
-
-#### 1. Install prerequisites
-
-```
-DEBIAN_FRONTEND=noninteractive apt-get update && apt-get install -y python3-pip
-pip install -U gunicorn
-pip install -Ur requirements.txt
-```
-
-#### 2. Run the application
-```
-gunicorn -b :3000 wsgi
-```
-
-The API should now be running on [http://localhost:3000](http://localhost:3000).
-
-#### 3. Test the application
-
-Get average rates between ports:
-```
-curl "http://127.0.0.1:3000/rates?date_from=2021-01-01&date_to=2021-01-31&orig_code=CNGGZ&dest_code=EETLL"
-```
-
-The output should be something like this:
-```
-{
-   "rates" : [
-      {
-         "count" : 3,
-         "day" : "2021-01-31",
-         "price" : 1154.33333333333
-      },
-      {
-         "count" : 3,
-         "day" : "2021-01-30",
-         "price" : 1154.33333333333
-      },
-      ...
-   ]
-}
-```
-
-## Case: Secure Database Access
-
-In this section we are seeking high-level answers only (no need to implement anything), and describe your solution appropriately.
-
-We use AWS RDS to host our PostgreSQL database that powers critical data services within Xeneta. Due to compliance requirements, we need to enable end-to-end auditing capability for any operation performed in the database. Along with that, we need an automated solution that rotates database user passwords every 30 days. The database being accessed by both Xeneta internal users and any applications hosted in AWS ECS.
-Users will be created on request and a data security personal must approve the request.
-
-Propose a solution that we can implement to achieve the objectives while having zero downtime for the Xeneta applications.
-
-Provide a high-level diagram, along with a few paragraphs describing the choices you've made and what factors you need to take into consideration.
-
+Docker push -> ECR or a preferred image registry -> ECS postgres container <- CloudTrail
+                                                               ^
+                                                               |
+                                                      Secret manager with
+                                                      30 day secret rotation
+                                                               ^
+                                                               |
+                                                      IAM policies for
+                                                      DB access
+                                                               ^
+                                                               |
+                                                      IAM roles/groups to users and
+                                                      apps for DB access
