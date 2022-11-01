@@ -1,13 +1,45 @@
 Part 1:
 
-This terraform project was tested locally in a MacBook Pro (Monterey v12.6) using Terraform v1.2.5 
-and Docker engine v20.10.12.
+This terraform project was tested locally in a MacBook Pro (Monterey v12.6) using Terraform v1.2.5 and Docker engine 
+v20.10.12. Before you execute the logic in this project, please make sure a recent version of Terraform and Docker engine
+installed and that the Docker engine is running.
 
-Please ensure that you have the docker running on your machine (I often shut it down due to resources) as Terraform plan will fail without it running in the background.
+One way to check the Docker engine is running is to run the simple command from a terminal, docker version. You might 
+see an output like the following:
 
+docker version
+Client:
+Cloud integration: v1.0.22
+Version:           20.10.12
+API version:       1.41
+Go version:        go1.16.12
+Git commit:        e91ed57
+Built:             Mon Dec 13 11:46:56 2021
+OS/Arch:           darwin/amd64
+Context:           default
+Experimental:      true
 
-Here are the steps to spin up the container environment with the api server consuming data from postgresl 13 
-in the same container. 
+Server: Docker Desktop 4.5.0 (74594)
+Engine:
+Version:          20.10.12
+API version:      1.41 (minimum version 1.12)
+Go version:       go1.16.12
+Git commit:       459d0df
+Built:            Mon Dec 13 11:43:56 2021
+OS/Arch:          linux/amd64
+Experimental:     false
+containerd:
+Version:          1.4.12
+GitCommit:        7b11cfaabd73bb80907dd23182b9347b4245eb5d
+runc:
+Version:          1.0.2
+GitCommit:        v1.0.2-0-g52b36a2
+docker-init:
+Version:          0.19.0
+GitCommit:        de40ad0
+
+Here are the steps to spin up the container environment with the api server consuming data from postgresl 13 in the same
+container. 
 
 After docker daemon bootstraps, cd to the root of the project, and run the following commands:
 
@@ -16,14 +48,15 @@ terraform plan
 terraform apply -auto-approve
 
 Running these commands shall create and provision a docker container which has a postgres populated with data from the
-sql dump and api server.
-psql -h localhost -U postgres -c "SELECT 'alive'" and the curl command generated expected results
+sql dump and a running Postgres server and an api server.
 
-Notice that after running the last command, the console will stay active.Kill it by entering
-CTRL+C, which will not affect the functionality of the running container.
+Notice that after running the last command, the console will stay active forever unless you explicitly kill it. Here is 
+one way to exit from the console: Once you see a log entry in the console like this one, 
+[INFO] Listening at: http://0.0.0.0:3000, it is safe to terminate the terraform console by entering the following 
+key combinations, CTRL+C.
 
-Deployment to AWS will require a permissible AWS role and the logic for product is likely quite different 
-from that for local, mainly because of the following reasons:
+Deployment to AWS will require a permissible AWS role and the logic for product is likely quite different from that for 
+local, mainly because of the following reasons:
 1. For the local environment, the postgres and api servers run in the same container as suggested by the requirements of 
 the challenge. In product, the db and api will run in separate containers with images.
 2. For local, the docker image comes from a ready-made postgres image with custom logic for the
